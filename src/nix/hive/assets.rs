@@ -73,10 +73,10 @@ impl Assets {
             HivePath::Legacy(path) => {
                 format!(
                     "with builtins; let eval = import {eval_nix}; hive = eval {{ rawHive = import {path}; colmenaOptions = import {options_nix}; colmenaModules = import {modules_nix}; }}; in ",
-                    path = path.to_str().unwrap(),
-                    eval_nix = self.get_path("eval.nix"),
-                    options_nix = self.get_path("options.nix"),
-                    modules_nix = self.get_path("modules.nix"),
+                    path = nix_path(path.to_str().unwrap()),
+                    eval_nix = nix_path(&self.get_path("eval.nix")),
+                    options_nix = nix_path(&self.get_path("options.nix")),
+                    modules_nix = nix_path(&self.get_path("modules.nix")),
                 )
             }
             HivePath::Flake(_) => {
@@ -99,6 +99,18 @@ impl Assets {
             .unwrap()
             .to_string()
     }
+}
+
+/// Renders an absolute filesystem path as a Nix expression.
+///
+/// A bare path literal can't contain characters like `@` or spaces, so the
+/// path is built from a string instead.
+fn nix_path(path: &str) -> String {
+    let escaped = path
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace("${", "\\${");
+    format!("(/. + \"{escaped}\")")
 }
 
 fn create_file(base: &TempDir, name: &str, contents: &[u8]) -> ColmenaResult<()> {
