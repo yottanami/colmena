@@ -4,6 +4,7 @@ use clap::Args;
 
 use crate::error::ColmenaError;
 use crate::nix::Hive;
+use crate::nix::expression::nix_path;
 
 /// Evaluate an expression using the complete configuration
 ///
@@ -40,10 +41,12 @@ pub async fn run(
         .map(|path| {
             format!(
                 "import {}",
-                path.canonicalize()
-                    .expect("Could not generate absolute path to expression file.")
-                    .to_str()
-                    .unwrap()
+                nix_path(
+                    path.canonicalize()
+                        .expect("Could not generate absolute path to expression file.")
+                        .to_str()
+                        .unwrap()
+                )
             )
         })
         .or(expression);
