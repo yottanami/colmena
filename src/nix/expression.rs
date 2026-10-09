@@ -49,13 +49,21 @@ impl NixExpression for SerializedNixExpression {
 }
 
 /// Turns a string into a quoted Nix string expression.
-fn nix_quote(s: &str) -> String {
+pub(crate) fn nix_quote(s: &str) -> String {
     let inner = s
         .replace('\\', r#"\\"#)
         .replace('"', r#"\""#)
         .replace("${", r#"\${"#);
 
     format!("\"{}\"", inner)
+}
+
+/// Turns an absolute filesystem path into a Nix path expression.
+///
+/// A bare path literal can't contain characters like `@` or spaces, so the
+/// path is built from a string instead.
+pub(crate) fn nix_path(path: &str) -> String {
+    format!("(/. + {})", nix_quote(path))
 }
 
 #[cfg(test)]
@@ -77,5 +85,14 @@ mod tests {
         for (orig, quoted) in cases {
             assert_eq!(quoted, nix_quote(orig));
         }
+    }
+
+    #[test]
+    fn test_nix_path() {
+        assert_eq!(nix_path("/a/b.nix"), r#"(/. + "/a/b.nix")"#);
+        assert_eq!(
+            nix_path(r#"/home/user@host/my "${x}" dir/hive.nix"#),
+            r#"(/. + "/home/user@host/my \"\${x}\" dir/hive.nix")"#
+        );
     }
 }

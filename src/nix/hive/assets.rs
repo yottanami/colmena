@@ -13,6 +13,7 @@ use tempfile::{Builder as TempFileBuilder, TempDir};
 use super::{Flake, HivePath};
 use crate::error::ColmenaResult;
 use crate::nix::NixFlags;
+use crate::nix::expression::nix_path;
 use crate::nix::flake::lock_flake_quiet;
 
 const FLAKE_NIX: &str = include_str!("flake.nix");
@@ -99,18 +100,6 @@ impl Assets {
             .unwrap()
             .to_string()
     }
-}
-
-/// Renders an absolute filesystem path as a Nix expression.
-///
-/// A bare path literal can't contain characters like `@` or spaces, so the
-/// path is built from a string instead.
-fn nix_path(path: &str) -> String {
-    let escaped = path
-        .replace('\\', "\\\\")
-        .replace('"', "\\\"")
-        .replace("${", "\\${");
-    format!("(/. + \"{escaped}\")")
 }
 
 fn create_file(base: &TempDir, name: &str, contents: &[u8]) -> ColmenaResult<()> {
