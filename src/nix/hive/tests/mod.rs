@@ -256,6 +256,33 @@ fn test_parse_node_references() {
 }
 
 #[test]
+fn test_parse_hive_in_path_with_special_characters() {
+    let dir = TempFileBuilder::new()
+        .prefix("colmena user@host \"${x}\" ")
+        .tempdir()
+        .unwrap();
+    let hive_file = dir.path().join("hive.nix");
+    fs::write(
+        &hive_file,
+        r#"
+      {
+        host-a = { name, nodes, ... }: {
+          time.timeZone = "America/Los_Angeles";
+        };
+      }
+    "#,
+    )
+    .unwrap();
+
+    let flags = NixFlags::default();
+    let hive_path = block_on(HivePath::from_path(&hive_file, &flags)).unwrap();
+    let hive = block_on(Hive::new(hive_path, flags)).unwrap();
+
+    let nodes = block_on(hive.node_names()).unwrap();
+    assert_eq!(nodes, vec![node!("host-a")]);
+}
+
+#[test]
 fn test_parse_unknown_option() {
     TempHive::invalid(
         r#"

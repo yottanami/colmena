@@ -13,6 +13,7 @@ use tempfile::{Builder as TempFileBuilder, TempDir};
 use super::{Flake, HivePath};
 use crate::error::ColmenaResult;
 use crate::nix::NixFlags;
+use crate::nix::expression::nix_path;
 use crate::nix::flake::lock_flake_quiet;
 
 const FLAKE_NIX: &str = include_str!("flake.nix");
@@ -73,10 +74,10 @@ impl Assets {
             HivePath::Legacy(path) => {
                 format!(
                     "with builtins; let eval = import {eval_nix}; hive = eval {{ rawHive = import {path}; colmenaOptions = import {options_nix}; colmenaModules = import {modules_nix}; }}; in ",
-                    path = path.to_str().unwrap(),
-                    eval_nix = self.get_path("eval.nix"),
-                    options_nix = self.get_path("options.nix"),
-                    modules_nix = self.get_path("modules.nix"),
+                    path = nix_path(path.to_str().unwrap()),
+                    eval_nix = nix_path(&self.get_path("eval.nix")),
+                    options_nix = nix_path(&self.get_path("options.nix")),
+                    modules_nix = nix_path(&self.get_path("modules.nix")),
                 )
             }
             HivePath::Flake(_) => {
